@@ -9,7 +9,7 @@ namespace Hawkmoth.Webjobs
     /// <summary>
     /// <see cref="IQueueTriggerIndexer"/>
     /// </summary>
-    internal class QueueTriggerIndexer : IQueueTriggerIndexer
+    public class QueueTriggerIndexer : IQueueTriggerIndexer
     {
         private readonly ITraceWriter _traceWriter;
 
@@ -29,61 +29,60 @@ namespace Hawkmoth.Webjobs
         {
             var queueTriggerMethods = new Dictionary<string, MethodInfo>();
 
-            var entryAssmbly = Assembly.GetEntryAssembly();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            GetAllQueueTriggerMethods(entryAssmbly, queueTriggerMethods);
-
-            return queueTriggerMethods;
-        }
-
-
-
-        private void GetAllQueueTriggerMethods(Assembly assembly, Dictionary<string, MethodInfo> queueTriggeredMethods)
-        {
-            var entryAssmbly = Assembly.GetEntryAssembly();
-
-            AddQueueTriggerMethodsInAssembly(entryAssmbly, queueTriggeredMethods);
-
-            foreach (var childAssemblyName in entryAssmbly.GetReferencedAssemblies())
+            foreach (var assembly in assemblies)
             {
-                var childAssembly = Assembly.Load(childAssemblyName);
-
-                GetAllQueueTriggerMethods(assembly, queueTriggeredMethods);
+                AddQueueTriggerMethodsInAssembly(assembly, queueTriggerMethods);
             }
 
+            return queueTriggerMethods;
         }
 
 
         private void AddQueueTriggerMethodsInAssembly(Assembly assembly, Dictionary<string, MethodInfo> queueMethods)
         {
 
-            var assemblyQueueMethods = assembly
-                .GetTypes()
-                .SelectMany(t => t.GetMethods())
-                .Where(m => m.GetQueueTriggerParameter() != null)
-                .ToArray();
-
-            foreach (var method in assemblyQueueMethods)
+            try
             {
-                var queueTriggerParam = method.GetQueueTriggerParameter();
+                var assemblyQueueMethods = assembly
+                    .GetTypes()
+                    .SelectMany(t => t.GetMethods())
+                    .Where(m => m.GetQueueTriggerParameter() != null)
+                    .ToArray();
 
-                if (queueTriggerParam != null)
+                foreach (var method in assemblyQueueMethods)
                 {
-                    var queueAttribute = queueTriggerParam.GetQueueTriggerAttribute();
+                    var queueTriggerParam = method.GetQueueTriggerParameter();
 
-                    if (string.IsNullOrEmpty(queueAttribute.QueueName))
-                        throw new InvalidOperationException($"QueueTriggerAttribute must have a QueueName, Method: {method.Name}, Queue Trigger Parameter: {queueTriggerParam.Name}, Assembly: {assembly.FullName}");
+                    if (queueTriggerParam != null)
+                    {
+                        var queueAttribute = queueTriggerParam.GetQueueTriggerAttribute();
 
-                    var queueName = queueAttribute.QueueName.ToLower();
+                        if (string.IsNullOrEmpty(queueAttribute.QueueName))
+                            throw new InvalidOperationException($"QueueTriggerAttribute must have a QueueName, Method: {method.Name}, Queue Trigger Parameter: {queueTriggerParam.Name}, Assembly: {assembly.GetName().Name}");
 
-                    if (queueMethods.ContainsKey(queueName))
-                        throw new InvalidOperationException($"Cannot have multiple methods triggered by the same queue: {queueAttribute.QueueName}");
+                        var queueName = queueAttribute.QueueName.ToLower();
 
-                    queueMethods.Add(queueName, method);
+                        if (queueMethods.ContainsKey(queueName))
+                            throw new InvalidOperationException($"Cannot have multiple methods triggered by the same queue: {queueAttribute.QueueName}");
 
-                    _traceWriter.Verbose($"Found queue trigger method {method} for queue {queueName} in assembly {assembly.FullName}");
+                        queueMethods.Add(queueName, method);
+
+                        _traceWriter.Info($"Found queue trigger method {method.Name} for queue {queueName} in assembly {assembly.GetName().Name}");
+                    }
                 }
             }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Don't treat this as a failure - log error and continue
+                _traceWriter.Verbose($"Failed to load types for assembly {assembly.GetName().Name}:");
+                foreach (var lEx in ex.LoaderExceptions)
+                {
+                    _traceWriter.Verbose(lEx.ToString());
+                }
+            }
+
 
         }
 

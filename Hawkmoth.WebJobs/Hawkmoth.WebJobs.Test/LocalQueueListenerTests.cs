@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Hawkmoth.WebJobs.Test
 {
-    public class LocalStorgageJobHostTests
+    public class LocalQueueListenerTests
     {
     }
 }

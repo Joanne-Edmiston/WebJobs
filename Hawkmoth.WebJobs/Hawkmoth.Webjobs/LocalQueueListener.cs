@@ -11,9 +11,8 @@ using System.Threading.Tasks;
 
 namespace Hawkmoth.Webjobs
 {
-    internal class LocalQueueListener : IQueueListener
+    public class LocalQueueListener : IQueueListener
     {
-
          
         private readonly ITraceWriter _traceWriter;
         private CancellationTokenSource _cancellationTokenSource;

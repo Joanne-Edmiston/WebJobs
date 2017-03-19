@@ -11,41 +11,19 @@ namespace Hawkmoth.Webjobs
         private readonly IQueueTriggerIndexer _queueTriggerIndexer;
         private IQueueListener _queueListener;
         private ITraceWriter _tracerWriter;
+        private IQueueTriggerMethodInvoker _queueMethodInvoker;
 
         public LocalStorageJobHost(
             IQueueTriggerIndexer queueTriggerIndexer = null,
             IQueueListener queueListener = null,
-            ITraceWriter tracerWriter = null
+            ITraceWriter tracerWriter = null,
+            IQueueTriggerMethodInvoker queueMethodInvoker = null
             )
         {
-            if (tracerWriter == null)
-            {
-                _tracerWriter = new LocalTraceWriter(System.Diagnostics.TraceLevel.Verbose);
-            }
-            else
-            {
-                _tracerWriter = tracerWriter;
-            }
-
-            if (queueTriggerIndexer == null)
-            {
-                _queueTriggerIndexer = new QueueTriggerIndexer(tracerWriter);
-            }
-            else
-            {
-                _queueTriggerIndexer = queueTriggerIndexer;
-            }
-
-            if (queueListener == null)
-            {
-                _queueListener = new LocalQueueListener(tracerWriter);
-            }
-            else
-            {
-                _queueListener = queueListener;
-            }
-
-            
+            _tracerWriter = tracerWriter ?? new LocalTraceWriter(System.Diagnostics.TraceLevel.Verbose);
+            _queueTriggerIndexer = queueTriggerIndexer ?? new QueueTriggerIndexer(tracerWriter);
+            _queueMethodInvoker = queueMethodInvoker ?? new QueueTriggerMethodInvoker();
+            _queueListener = queueListener ?? new LocalQueueListener(tracerWriter, queueMethodInvoker);
 
         }
 

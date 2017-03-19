@@ -1,7 +1,5 @@
 ﻿using Hawkmoth.Webjobs;
-using Microsoft.Azure.WebJobs;
 using Moq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Hawkmoth.WebJobs.Test
@@ -58,33 +56,6 @@ namespace Hawkmoth.WebJobs.Test
         }
 
 
-        /// <summary>
-        /// Should be found by the indexer
-        /// </summary>
-        /// <param name="ob"></param>
-        public static void QueueTriggerFunction1(
-            [QueueTrigger("queue1")] string queueParam1)
-        {
-        }
-
-        /// <summary>
-        /// Should be found by the indexer
-        /// </summary>
-        /// <param name="ob"></param>
-        /// <returns></returns>
-        public async static Task QueueTriggerFunction2(
-            [QueueTrigger("queue2")] object queueParam2)
-        {
-
-        }
-
-        /// <summary>
-        /// Should not be found by the indexer
-        /// </summary>
-        /// <param name="ob"></param>
-        public static void NotAQueueTriggerFunction(object ob)
-        {
-        }
-
+      
     }
 }

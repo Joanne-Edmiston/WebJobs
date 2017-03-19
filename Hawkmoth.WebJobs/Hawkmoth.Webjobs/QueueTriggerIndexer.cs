@@ -47,8 +47,9 @@ namespace Hawkmoth.Webjobs
             {
                 var assemblyQueueMethods = assembly
                     .GetTypes()
+                    .Where(t => t.IsPublic)
                     .SelectMany(t => t.GetMethods())
-                    .Where(m => m.GetQueueTriggerParameter() != null)
+                    .Where(m => m.GetQueueTriggerParameter() != null && m.IsPublic)
                     .ToArray();
 
                 foreach (var method in assemblyQueueMethods)

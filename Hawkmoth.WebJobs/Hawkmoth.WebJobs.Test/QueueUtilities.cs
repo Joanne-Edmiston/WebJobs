@@ -26,7 +26,7 @@ namespace Hawkmoth.WebJobs.Test
         {
             var queue = GetQueueClient().GetQueueReference(queueName);
 
-            if (!(await queue.ExistsAsync()))
+            if ((await queue.ExistsAsync()))
             {
                 await queue.DeleteAsync();
             };

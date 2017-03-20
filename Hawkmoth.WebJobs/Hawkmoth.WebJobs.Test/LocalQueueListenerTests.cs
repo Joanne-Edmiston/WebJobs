@@ -18,8 +18,8 @@ namespace Hawkmoth.WebJobs.Test
     {
         private const string testQueueName = "testqueuename";
 
-        [Fact(DisplayName = "StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created")]
-        public void StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created()
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created")]
+        public async Task StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
             var mockInvoker = new Mock<IQueueTriggerMethodInvoker>(MockBehavior.Strict);
@@ -56,7 +56,7 @@ namespace Hawkmoth.WebJobs.Test
         }
 
 
-        [Fact(DisplayName = "StartListening_Throws_Exception_If_QueueName_Is_Empty")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Throws_Exception_If_QueueName_Is_Empty")]
         public void StartListening_Throws_Exception_If_QueueName_Is_Empty()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
@@ -76,7 +76,7 @@ namespace Hawkmoth.WebJobs.Test
 
         }
 
-        [Fact(DisplayName = "StartListening_Throws_Exception_If_MethodInfo_is_null")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Throws_Exception_If_MethodInfo_is_null")]
         public void StartListening_Throws_Exception_If_MethodInfo_is_null()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
@@ -97,7 +97,7 @@ namespace Hawkmoth.WebJobs.Test
         }
 
 
-        [Fact(DisplayName = "StartListening_Invokes_Queue_Trigger_Method_If_Item_Found_In_Queue")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Invokes_Queue_Trigger_Method_If_Item_Found_In_Queue")]
         public async Task StartListening_Invokes_Queue_Trigger_Method_If_Item_Found_In_Queue()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
@@ -128,6 +128,7 @@ namespace Hawkmoth.WebJobs.Test
                 .Setup(i => i.InvokeAsync(
                     It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData)),
                     It.Is<MethodInfo>(m => m == method)))
+                .Returns(Task.FromResult(1))
                 .Verifiable();
 
             mockTracer
@@ -137,8 +138,8 @@ namespace Hawkmoth.WebJobs.Test
 
             listener.StartListening(testQueueName, method);
 
-            // sleep for 1 second before poll interval
-            Thread.Sleep((pollIntervalSeconds - 1) * 1000);
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Token.WaitHandle.WaitOne(new TimeSpan(0, 0, (pollIntervalSeconds - 1)));
 
             listener.Stop();
 
@@ -146,13 +147,13 @@ namespace Hawkmoth.WebJobs.Test
             mockInvoker.VerifyAll();
         }
 
-        [Fact(DisplayName = "StartListening_Deletes_Queue_Message_After_Processing", Skip = "TODO: write test")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Deletes_Queue_Message_After_Processing", Skip = "TODO: write test")]
         public async Task StartListening_Deletes_Queue_Message_After_Processing()
         {
 
         }
 
-        [Fact(DisplayName = "StartListening_Inovkes_Queue_Trigger_Method_For_All_Items_In_Queue_Batch")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Inovkes_Queue_Trigger_Method_For_All_Items_In_Queue_Batch")]
         public async Task StartListening_Inovkes_Queue_Trigger_Method_For_All_Items_In_Queue_Batch()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
@@ -179,31 +180,34 @@ namespace Hawkmoth.WebJobs.Test
 
             mockTracer.Setup(t => t.Info(It.Is<string>(s => s == $"Processing new message from '{testQueueName}'"))).Verifiable();
 
-            mockInvoker.Setup(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData1)), It.Is<MethodInfo>(m => m == method))).Verifiable();
-            mockInvoker.Setup(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData2)), It.Is<MethodInfo>(m => m == method))).Verifiable();
-            mockInvoker.Setup(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData3)), It.Is<MethodInfo>(m => m == method))).Verifiable();
+            mockInvoker.Setup(i => i.InvokeAsync(It.IsAny<CloudQueueMessage>(), It.IsAny<MethodInfo>()))
+                .Returns(Task.FromResult(0))
+                .Verifiable();
 
             mockTracer.Setup(t => t.Info(It.Is<string>(s => s == $"Stop listening to queues"))).Verifiable();
 
             listener.StartListening(testQueueName, method);
 
-            // sleep for 1 second before poll interval
-            Thread.Sleep((pollIntervalSeconds - 1) * 1000);
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Token.WaitHandle.WaitOne(new TimeSpan(0, 0, (pollIntervalSeconds - 1)));
 
             listener.Stop();
 
             mockTracer.VerifyAll();
             mockTracer.Verify(t => t.Info(It.Is<string>(s => s == $"Processing new message from '{testQueueName}'")), Times.Exactly(3));
-            mockInvoker.VerifyAll();
+
+            mockInvoker.Verify(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData1)), It.Is<MethodInfo>(m => m == method)), Times.Once());
+            mockInvoker.Verify(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData2)), It.Is<MethodInfo>(m => m == method)), Times.Once());
+            mockInvoker.Verify(i => i.InvokeAsync(It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData3)), It.Is<MethodInfo>(m => m == method)), Times.Once());
         }
 
 
-        [Fact(DisplayName = "StartListening_Does_Not_Poll_Queue_If_Listener_Is_Stopping", Skip ="TODO: Write test")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Does_Not_Poll_Queue_If_Listener_Is_Stopping", Skip ="TODO: Write test")]
         public void StartListening_Does_Not_Poll_Queue_If_Listener_Is_Stopping()
         {
         }
 
-        [Fact(DisplayName = "Stop_Stops_All_Queue_Polling", Skip = "TODO: Write test")]
+        [Fact(DisplayName = "LocalQueueListener_Stop_Stops_All_Queue_Polling", Skip = "TODO: Write test")]
         public void Stop_Stops_All_Queue_Polling()
         {
         }
@@ -215,9 +219,8 @@ namespace Hawkmoth.WebJobs.Test
         {
             var actualMessageObject = QueueUtilities.GetObjectQueueMessage<TestQueueParameterType>(message);
 
-            Assert.Equal(expectedMessageObject.TestProperty, actualMessageObject.TestProperty);
+            return expectedMessageObject.TestProperty == actualMessageObject.TestProperty;
 
-            return true;
         }
 
         /// <summary>

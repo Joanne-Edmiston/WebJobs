@@ -8,6 +8,9 @@ namespace Hawkmoth.Webjobs
 {
     public class LocalStorageJobHost : IJobHost
     {
+        private CancellationTokenSource _stoppingTokenSource;
+
+
         private readonly IQueueTriggerIndexer _queueTriggerIndexer;
         private IQueueListener _queueListener;
         private ITraceWriter _tracerWriter;
@@ -20,6 +23,8 @@ namespace Hawkmoth.Webjobs
             IQueueTriggerMethodInvoker queueMethodInvoker = null
             )
         {
+            _stoppingTokenSource = new CancellationTokenSource();
+
             _tracerWriter = tracerWriter ?? new LocalTraceWriter(System.Diagnostics.TraceLevel.Verbose);
             _queueTriggerIndexer = queueTriggerIndexer ?? new QueueTriggerIndexer(tracerWriter);
             _queueMethodInvoker = queueMethodInvoker ?? new QueueTriggerMethodInvoker();
@@ -83,6 +88,8 @@ namespace Hawkmoth.Webjobs
         public void RunAndBlock()
         {
             Start();
+            _stoppingTokenSource.Token.WaitHandle.WaitOne();
+            Stop();
            
         }
 
@@ -91,23 +98,26 @@ namespace Hawkmoth.Webjobs
         /// </summary>
         public void Start()
         {
-            var queueTriggers = _queueTriggerIndexer.GetAllAzureQueueTriggerMethods();
-
-            foreach (var queueTrigger in queueTriggers)
-            {
-                var queueName = queueTrigger.Key;
-                var method = queueTrigger.Value;
-
-                _queueListener.StartListening(queueName, method);
-            }
+            StartAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// <see cref="IJobHost.StartAsync(CancellationToken)"/>
         /// </summary>
-        public Task StartAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public async Task StartAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            await Task.Run(() =>
+            {
+                var queueTriggers = _queueTriggerIndexer.GetAllAzureQueueTriggerMethods();
+
+                foreach (var queueTrigger in queueTriggers)
+                {
+                    var queueName = queueTrigger.Key;
+                    var method = queueTrigger.Value;
+
+                    _queueListener.StartListening(queueName, method);
+                }
+            });
         }
 
         /// <summary>
@@ -115,19 +125,25 @@ namespace Hawkmoth.Webjobs
         /// </summary>
         public void Stop()
         {
-            if (_queueListener != null && !_queueListener.IsStopping)
-            {
-                _queueListener.Stop();
-            }
+            StopAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// <see cref="IJobHost.StopAsync"/>
         /// </summary>
         /// <returns></returns>
-        public Task StopAsync()
+        public async Task StopAsync()
         {
-            throw new NotImplementedException();
+            await Task.Run(() =>
+            {
+                if (_queueListener != null && !_queueListener.IsStopping)
+                {
+                    _queueListener.Stop();
+                }
+
+                _stoppingTokenSource.Cancel();
+            });
+
         }
 
 

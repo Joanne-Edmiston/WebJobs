@@ -6,7 +6,7 @@ namespace Hawkmoth.WebJobs.Test
 {
     public class QueueTriggerIndexerTests
     {
-        [Fact(DisplayName = "GetAllAzureQueueTriggerMethods_Finds_Only_QueueTrigger_Methods")]
+        [Fact(DisplayName = "QueueTriggerIndexer_GetAllAzureQueueTriggerMethods_Finds_Only_QueueTrigger_Methods")]
         public void GetAllAzureQueueTriggerMethods_Finds_Only_QueueTrigger_Methods()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
@@ -43,13 +43,13 @@ namespace Hawkmoth.WebJobs.Test
 
         }
 
-        [Fact(DisplayName = "GetAllAzureQueueTriggerMethods_Throws_Exception_When_Two_Methods_Triggered_By_Same_Queue", Skip = "TODO: Write Test")]
+        [Fact(DisplayName = "QueueTriggerIndexer_GetAllAzureQueueTriggerMethods_Throws_Exception_When_Two_Methods_Triggered_By_Same_Queue", Skip = "TODO: Write Test")]
         public void GetAllAzureQueueTriggerMethods_Throws_Exception_When_Two_Methods_Triggered_By_Same_Queue()
         {
             // ToDo - write this test - try loading an asembly with invalid method into domain
         }
 
-        [Fact(DisplayName = "GetAllAzureQueueTriggerMethods_Throws_Exception_When_QueueTrigger_Method_Has_Empty_Queue_Name", Skip = "TODO: Write Test")]
+        [Fact(DisplayName = "QueueTriggerIndexer_GetAllAzureQueueTriggerMethods_Throws_Exception_When_QueueTrigger_Method_Has_Empty_Queue_Name", Skip = "TODO: Write Test")]
         public void GetAllAzureQueueTriggerMethods_Throws_Exception_When_QueueTrigger_Method_Has_Empty_Queue_Name()
         {
             // ToDo - write this test - try loading an asembly with invalid method into domain

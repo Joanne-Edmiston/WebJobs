@@ -15,11 +15,23 @@ namespace Hawkmoth.WebJobs.Test
 
         public static async Task QueueMessageDataAsync(string queueName, object messageData)
         {
-            var queueMessage = new CloudQueueMessage(JsonConvert.SerializeObject(messageData));
+            var queueMessage = CreateQueueMessage(messageData);
             var queue = GetQueueClient().GetQueueReference(queueName);
             queue.CreateIfNotExists();
 
             await queue.AddMessageAsync(queueMessage);
+        }
+
+        public static async Task<CloudQueueMessage> GetNextMessageFromQueue(string queueName)
+        {
+            var queue = GetQueueClient().GetQueueReference(queueName);
+
+            if (await queue.ExistsAsync())
+            {
+                return await queue.GetMessageAsync();
+            }
+
+            return null;
         }
 
         public static async Task DeleteQueue(string queueName)
@@ -30,6 +42,13 @@ namespace Hawkmoth.WebJobs.Test
             {
                 await queue.DeleteAsync();
             };
+        }
+
+        public static CloudQueueMessage CreateQueueMessage(object messageData)
+        {
+            var queueMessage = new CloudQueueMessage(JsonConvert.SerializeObject(messageData));
+
+            return queueMessage;
         }
 
         public static T GetObjectQueueMessage<T>(CloudQueueMessage message)

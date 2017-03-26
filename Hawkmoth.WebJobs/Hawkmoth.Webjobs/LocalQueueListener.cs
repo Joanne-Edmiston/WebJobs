@@ -120,9 +120,9 @@ namespace Hawkmoth.Webjobs
         }
 
         /// <summary>
-        /// <see cref="IQueueListener.Stop()"/>
+        /// <see cref="IQueueListener.StopAll()"/>
         /// </summary>
-        public void Stop()
+        public void StopAll()
         {
             if (_cancellationTokenSource != null && 
                 !_cancellationTokenSource.IsCancellationRequested)
@@ -148,7 +148,7 @@ namespace Hawkmoth.Webjobs
         {
             if (disposing)
             {
-                Stop();
+                StopAll();
 
                 _cancellationTokenSource.Dispose();
                 _cancellationTokenSource = null;

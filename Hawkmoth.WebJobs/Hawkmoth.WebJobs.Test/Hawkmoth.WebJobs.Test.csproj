@@ -39,7 +39,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -49,6 +51,7 @@
     <Compile Include="LocalQueueListenerTests.cs" />
     <Compile Include="LocalStorageJobHostTests.cs" />
     <Compile Include="QueueTriggerIndexerTests.cs" />
+    <Compile Include="QueueTriggerMethodInvokerTests.cs" />
     <Compile Include="TestFunctions.cs" />
     <Compile Include="QueueUtilities.cs" />
   </ItemGroup>

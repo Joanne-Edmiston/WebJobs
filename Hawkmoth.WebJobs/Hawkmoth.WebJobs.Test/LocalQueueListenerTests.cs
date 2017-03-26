@@ -19,7 +19,7 @@ namespace Hawkmoth.WebJobs.Test
         private const string testQueueName = "testqueuename";
 
         [Fact(DisplayName = "LocalQueueListener_StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created")]
-        public async Task StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created()
+        public void StartListening_Does_Not_Throw_Exception_If_Queue_Not_Yet_Created()
         {
             var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
             var mockInvoker = new Mock<IQueueTriggerMethodInvoker>(MockBehavior.Strict);
@@ -48,7 +48,7 @@ namespace Hawkmoth.WebJobs.Test
             // sleep for 1 second before poll interval
             Thread.Sleep((pollIntervalSeconds -1) * 1000);
 
-            listener.Stop();
+            listener.StopAll();
 
             mockTracer.VerifyAll();
             mockInvoker
@@ -141,15 +141,57 @@ namespace Hawkmoth.WebJobs.Test
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Token.WaitHandle.WaitOne(new TimeSpan(0, 0, (pollIntervalSeconds - 1)));
 
-            listener.Stop();
+            listener.StopAll();
 
             mockTracer.VerifyAll();
             mockInvoker.VerifyAll();
         }
 
-        [Fact(DisplayName = "LocalQueueListener_StartListening_Deletes_Queue_Message_After_Processing", Skip = "TODO: write test")]
+        [Fact(DisplayName = "LocalQueueListener_StartListening_Deletes_Queue_Message_After_Processing")]
         public async Task StartListening_Deletes_Queue_Message_After_Processing()
         {
+            var mockTracer = new Mock<ITraceWriter>(MockBehavior.Strict);
+            var mockInvoker = new Mock<IQueueTriggerMethodInvoker>(MockBehavior.Strict);
+            var pollIntervalSeconds = 5;
+
+            var listener = new LocalQueueListener(mockTracer.Object, mockInvoker.Object, pollIntervalSeconds, messageVisibilityTimeoutSeconds: 1);
+
+            var method = typeof(QueueListenerTestFunctions).GetMethods().FirstOrDefault();
+
+            // Add test message to the queue
+            var queueData = new TestQueueParameterType
+            {
+                TestProperty = "This is a test object to be queued"
+            };
+            await QueueUtilities.DeleteQueue(testQueueName);
+            await QueueUtilities.QueueMessageDataAsync(testQueueName, queueData);
+
+            mockTracer
+                .Setup(t => t.Info(It.IsAny<string>()))
+                .Verifiable();
+
+            mockInvoker
+                .Setup(i => i.InvokeAsync(
+                    It.Is<CloudQueueMessage>(m => VerifyCloudQueueMessasge(m, queueData)),
+                    It.Is<MethodInfo>(m => m == method)))
+                .Returns(Task.FromResult(1))
+                .Verifiable();
+
+
+            listener.StartListening(testQueueName, method);
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Token.WaitHandle.WaitOne(new TimeSpan(0, 0, (pollIntervalSeconds - 1)));
+
+            listener.StopAll();
+
+            var nextMessage = await QueueUtilities.GetNextMessageFromQueue(testQueueName);
+
+            Assert.Null(nextMessage);
+
+            mockTracer.VerifyAll();
+            mockInvoker.VerifyAll();
+
 
         }
 
@@ -191,7 +233,7 @@ namespace Hawkmoth.WebJobs.Test
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Token.WaitHandle.WaitOne(new TimeSpan(0, 0, (pollIntervalSeconds - 1)));
 
-            listener.Stop();
+            listener.StopAll();
 
             mockTracer.VerifyAll();
             mockTracer.Verify(t => t.Info(It.Is<string>(s => s == $"Processing new message from '{testQueueName}'")), Times.Exactly(3));

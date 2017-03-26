@@ -24,7 +24,7 @@ namespace Hawkmoth.Webjobs
         /// <summary>
         /// Stop listening to all queues
         /// </summary>
-        void Stop();
+        void StopAll();
 
     }
 }

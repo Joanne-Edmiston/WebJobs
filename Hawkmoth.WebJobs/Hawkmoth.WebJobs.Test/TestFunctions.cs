@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.WebJobs;
+﻿using Hawkmoth.Webjobs;
+using Microsoft.Azure.WebJobs;
 using System.Threading.Tasks;
 
 namespace Hawkmoth.WebJobs.Test
@@ -8,6 +9,8 @@ namespace Hawkmoth.WebJobs.Test
     /// </summary>
     public class TestFunctions
     {
+        public static ITraceWriter TraceWriter;
+
         /// <summary>
         /// Should be found by the indexer
         /// </summary>
@@ -15,6 +18,7 @@ namespace Hawkmoth.WebJobs.Test
         public static void QueueTriggerFunction1(
             [QueueTrigger("queue1")] string queueParam1)
         {
+            TraceWriter.Info($"QueueTriggerFunction1 called with parameter {queueParam1}"); 
         }
 
         /// <summary>
@@ -25,7 +29,10 @@ namespace Hawkmoth.WebJobs.Test
         public async static Task QueueTriggerFunction2(
             [QueueTrigger("queue2")] object queueParam2)
         {
-
+            await Task.Run(() =>
+            {
+                TraceWriter.Info($"QueueTriggerFunction2 called with parameter {queueParam2}");
+            });
         }
 
         /// <summary>

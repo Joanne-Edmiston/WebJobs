@@ -138,7 +138,7 @@ namespace Hawkmoth.Webjobs
             {
                 if (_queueListener != null && !_queueListener.IsStopping)
                 {
-                    _queueListener.Stop();
+                    _queueListener.StopAll();
                 }
 
                 _stoppingTokenSource.Cancel();

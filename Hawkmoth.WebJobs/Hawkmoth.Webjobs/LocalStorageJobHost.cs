@@ -25,10 +25,10 @@ namespace Hawkmoth.Webjobs
         {
             _stoppingTokenSource = new CancellationTokenSource();
 
-            _tracerWriter = tracerWriter ?? new LocalTraceWriter(System.Diagnostics.TraceLevel.Verbose);
-            _queueTriggerIndexer = queueTriggerIndexer ?? new QueueTriggerIndexer(tracerWriter);
+            _tracerWriter = tracerWriter ?? new LocalTraceWriter(System.Diagnostics.TraceLevel.Info);
+            _queueTriggerIndexer = queueTriggerIndexer ?? new QueueTriggerIndexer(_tracerWriter);
             _queueMethodInvoker = queueMethodInvoker ?? new QueueTriggerMethodInvoker();
-            _queueListener = queueListener ?? new LocalQueueListener(tracerWriter, queueMethodInvoker);
+            _queueListener = queueListener ?? new LocalQueueListener(_tracerWriter, _queueMethodInvoker);
 
         }
 

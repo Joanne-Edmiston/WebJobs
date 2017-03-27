@@ -10,34 +10,34 @@ namespace Hawkmoth.Webjobs
 {
     internal class LocalTraceWriter :  ITraceWriter
     {
-        private readonly TraceLevel _minTraceLevel;
+        private readonly TraceLevel _maxTraceLevel;
 
-        public LocalTraceWriter(TraceLevel level)
+        public LocalTraceWriter(TraceLevel level = TraceLevel.Info)
         {
-            _minTraceLevel = level;
+            _maxTraceLevel = level;
         }
 
         public void Error(string message, Exception ex = null)
         {
-            if (TraceLevel.Error >= _minTraceLevel)
+            if (TraceLevel.Error <= _maxTraceLevel)
                DoTrace($"{message}: {ex.ToString()}");
         }
 
         public void Info(string message)
         {
-            if (TraceLevel.Info >= _minTraceLevel)
+            if (TraceLevel.Info <= _maxTraceLevel)
                 DoTrace(message);
         }
 
         public void Verbose(string message)
         {
-            if (TraceLevel.Verbose >= _minTraceLevel)
+            if (TraceLevel.Verbose <= _maxTraceLevel)
                 DoTrace(message);
         }
 
         public void Warning(string message)
         {
-            if (TraceLevel.Warning >= _minTraceLevel)
+            if (TraceLevel.Warning <= _maxTraceLevel)
                 DoTrace(message);
         }
 

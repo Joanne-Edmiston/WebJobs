@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ namespace Hawkmoth.Webjobs
         /// </summary>
         public void Call(MethodInfo method)
         {
-            throw new NotImplementedException();
+            CallAsync(method, default(CancellationToken)).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -60,9 +61,21 @@ namespace Hawkmoth.Webjobs
         /// <see cref="IJobHost.CallAsync(MethodInfo, CancellationToken)"/>
         /// </summary>
         /// <returns></returns>
-        public Task CallAsync(MethodInfo method, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task CallAsync(MethodInfo method, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            var parameters = method.GetParameters().Select(p => (object)null);
+
+            Console.WriteLine($"Calling {method.Name}");
+
+            var result = method.Invoke(null, parameters.ToArray());
+
+            if (method.IsAsyncMethod())
+            {
+                await(Task)result;
+            }
         }
 
         /// <summary>
@@ -168,6 +181,8 @@ namespace Hawkmoth.Webjobs
 
             }
         }
+
+
 
     }
 }
